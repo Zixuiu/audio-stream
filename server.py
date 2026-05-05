@@ -28,7 +28,7 @@ FORMAT = pyaudio.paInt16
 OUTPUT_FRAMES = 4096
 
 # 音频增强
-GAIN = 5.0
+GAIN = 15.0
 PREBUFFER_SECONDS = 0.3   # 预缓冲 300ms，彻底消除开头卡顿
 MAX_BUFFER_SECONDS = 1.0  # 最大缓冲 1 秒，防止延迟过大
 
