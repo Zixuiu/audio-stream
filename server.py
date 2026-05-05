@@ -1,6 +1,6 @@
 """
 手机音频 → 电脑播放 服务端（HTTPS + WSS）
-核心优化：bytearray 环形缓冲区 + 大预缓冲 + 音量增益
+优化版本：使用阻塞模式音频播放 + 自动选择最佳音频设备 + 更大的预缓冲
 用法: python server.py
 手机浏览器打开 https://<电脑IP>:8765
 """
@@ -25,21 +25,21 @@ WS_PORT = 8766
 SAMPLE_RATE = 44100
 CHANNELS = 1
 FORMAT = pyaudio.paInt16
-OUTPUT_FRAMES = 4096
 
 # 音频增强
-GAIN = 15.0
-PREBUFFER_SECONDS = 0.3   # 预缓冲 300ms，彻底消除开头卡顿
-MAX_BUFFER_SECONDS = 1.0  # 最大缓冲 1 秒，防止延迟过大
+GAIN = 20.0  # 增大增益
+PREBUFFER_SECONDS = 0.5   # 预缓冲 500ms
+MAX_BUFFER_SECONDS = 2.0  # 最大缓冲 2 秒
 
 # ==================== 路径 ====================
 BASE_DIR = Path(__file__).parent
 CERT_FILE = BASE_DIR / "cert.pem"
 KEY_FILE = BASE_DIR / "key.pem"
 
+
 # ==================== 高性能环形缓冲区 ====================
 class RingBuffer:
-    """基于 bytearray 的环形缓冲区，比 deque 快很多"""
+    """基于 bytearray 的环形缓冲区"""
 
     def __init__(self, size):
         self.buf = bytearray(size)
@@ -50,10 +50,8 @@ class RingBuffer:
         self.lock = threading.Lock()
 
     def write(self, data):
-        """写入数据，满了就丢弃最旧的"""
         with self.lock:
             n = len(data)
-            # 如果数据比缓冲区还大，只保留最后 size 字节
             if n >= self.size:
                 self.buf[-self.size:] = data[-self.size:]
                 self.write_pos = 0
@@ -61,14 +59,12 @@ class RingBuffer:
                 self.count = self.size
                 return
 
-            # 丢弃旧数据腾出空间
             space = self.size - self.count
             if n > space:
                 discard = n - space
                 self.read_pos = (self.read_pos + discard) % self.size
                 self.count -= discard
 
-            # 写入数据（可能分两段）
             first = min(n, self.size - self.write_pos)
             self.buf[self.write_pos:self.write_pos + first] = data[:first]
             if first < n:
@@ -77,7 +73,6 @@ class RingBuffer:
             self.count += n
 
     def read(self, n):
-        """读取 n 字节，不够补零"""
         with self.lock:
             if self.count == 0:
                 return b'\x00' * n
@@ -103,8 +98,26 @@ class RingBuffer:
         with self.lock:
             return self.count
 
+    def clear(self):
+        with self.lock:
+            self.write_pos = 0
+            self.read_pos = 0
+            self.count = 0
 
-# ==================== 音频播放器 ====================
+
+# ==================== 音频设备检测 ====================
+def get_best_output_device(p):
+    """使用系统默认音频输出设备"""
+    try:
+        best_device = p.get_default_output_device_info()
+        print(f"\n使用默认音频设备: {best_device['name']} (索引 {best_device['index']})")
+        return best_device['index']
+    except Exception as e:
+        print(f"\n无法获取默认设备: {e}")
+        return None
+
+
+# ==================== 音频播放器（阻塞模式） ====================
 class AudioPlayer:
     def __init__(self):
         self.pa = pyaudio.PyAudio()
@@ -112,42 +125,73 @@ class AudioPlayer:
         self.lock = threading.Lock()
         self.buffer = RingBuffer(int(SAMPLE_RATE * CHANNELS * 2 * MAX_BUFFER_SECONDS))
         self.prebuffer_target = int(SAMPLE_RATE * CHANNELS * 2 * PREBUFFER_SECONDS)
-        self.prebuffer_done = False
-        self._open_stream()
+        self.playing = True
+        self.total_frames_received = 0
+        self.total_bytes_sent = 0
+        
+        # 检测并选择最佳音频设备
+        device_index = get_best_output_device(self.pa)
+        self._open_stream(device_index)
+        
+        # 启动播放线程
+        self.play_thread = threading.Thread(target=self._play_loop, daemon=True)
+        self.play_thread.start()
 
-    def _open_stream(self):
-        self.stream = self.pa.open(
-            format=FORMAT,
-            channels=CHANNELS,
-            rate=SAMPLE_RATE,
-            output=True,
-            frames_per_buffer=OUTPUT_FRAMES,
-            stream_callback=self._callback,
-        )
+    def _open_stream(self, device_index=None):
+        kwargs = {
+            'format': FORMAT,
+            'channels': CHANNELS,
+            'rate': SAMPLE_RATE,
+            'output': True,
+            'frames_per_buffer': 1024,  # 更小的缓冲区降低延迟
+        }
+        
+        if device_index is not None:
+            kwargs['output_device_index'] = device_index
+            print(f"使用指定设备 (索引 {device_index})")
+        else:
+            print("使用默认音频设备")
+        
+        self.stream = self.pa.open(**kwargs)
+        print(f"音频流已打开: 采样率={SAMPLE_RATE}, 通道={CHANNELS}")
 
-    def _callback(self, in_data, frame_count, time_info, status):
-        bytes_needed = frame_count * CHANNELS * 2
-
-        if not self.prebuffer_done:
+    def _play_loop(self):
+        """阻塞模式播放循环"""
+        bytes_per_frame = 1024 * CHANNELS * 2
+        
+        while self.playing:
             if self.buffer.available >= self.prebuffer_target:
-                self.prebuffer_done = True
+                chunk = self.buffer.read(bytes_per_frame)
+                try:
+                    self.stream.write(chunk)
+                    self.total_bytes_sent += len(chunk)
+                except Exception as e:
+                    print(f"[!] 播放错误: {e}")
             else:
-                return (b'\x00' * bytes_needed, pyaudio.paContinue)
-
-        chunk = self.buffer.read(bytes_needed)
-        return (chunk, pyaudio.paContinue)
+                # 缓冲区不足，等待一下
+                time.sleep(0.01)
 
     def feed(self, audio_data: bytes):
         """接收 PCM 数据 → 增益 → 写入缓冲区"""
+        self.total_frames_received += 1
+        
+        # 转换为 float 进行增益处理
         samples = np.frombuffer(audio_data, dtype=np.int16).astype(np.float64)
+        
+        # 应用增益
         samples = np.clip(samples * GAIN, -32768, 32767)
+        
+        # 写回缓冲区
         self.buffer.write(samples.astype(np.int16).tobytes())
 
     def reset(self):
         """新连接时重置预缓冲"""
-        self.prebuffer_done = False
+        self.buffer.clear()
+        print("[↻] 缓冲区已重置")
 
     def stop(self):
+        self.playing = False
+        time.sleep(0.1)
         with self.lock:
             if self.stream:
                 try:
@@ -156,6 +200,14 @@ class AudioPlayer:
                 except Exception:
                     pass
             self.pa.terminate()
+
+    def get_stats(self):
+        return {
+            'buffer_available': self.buffer.available,
+            'prebuffer_target': self.prebuffer_target,
+            'frames_received': self.total_frames_received,
+            'bytes_sent': self.total_bytes_sent,
+        }
 
 
 # ==================== 工具函数 ====================
@@ -180,11 +232,16 @@ async def handle_client(websocket, player: AudioPlayer):
     client_addr = websocket.remote_address
     print(f"[+] 客户端已连接: {client_addr}")
     player.reset()
+    
+    bytes_received = 0
 
     try:
         async for message in websocket:
             if isinstance(message, bytes):
                 player.feed(message)
+                bytes_received += len(message)
+                if bytes_received % (44100 * 2) < 1000:  # 每约1秒打印一次
+                    print(f"[📊] 已接收: {bytes_received // 1024}KB")
             elif isinstance(message, str):
                 try:
                     data = json.loads(message)
@@ -235,6 +292,17 @@ async def https_handler(reader, writer):
             pass
 
 
+# ==================== 状态监控 ====================
+async def monitor_player(player: AudioPlayer):
+    """定期打印播放器状态"""
+    while True:
+        await asyncio.sleep(5)
+        stats = player.get_stats()
+        if stats['frames_received'] > 0:
+            buffer_percent = (stats['buffer_available'] / stats['prebuffer_target']) * 100 if stats['prebuffer_target'] > 0 else 0
+            print(f"[📊] 状态: 缓冲区={buffer_percent:.0f}%, 接收帧={stats['frames_received']}, 发送字节={stats['bytes_sent'] // 1024}KB")
+
+
 # ==================== 主函数 ====================
 async def main():
     local_ip = get_local_ip()
@@ -256,6 +324,10 @@ async def main():
 
     https_server = await asyncio.start_server(https_handler, HOST, PORT, ssl=ssl_ctx)
     wss_server = await websockets.serve(lambda ws: handle_client(ws, player), HOST, WS_PORT, ssl=ssl_ctx)
+    
+    # 启动状态监控
+    monitor_task = asyncio.create_task(monitor_player(player))
+    
     webbrowser.open(f"https://localhost:{PORT}")
 
     try:
