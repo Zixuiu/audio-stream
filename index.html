@@ -5,18 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🎵 手机音频传输</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             min-height: 100vh;
             color: #fff;
-            overflow: hidden;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -30,10 +26,7 @@
             text-align: center;
         }
 
-        .logo {
-            font-size: 48px;
-            margin-bottom: 8px;
-        }
+        .logo { font-size: 48px; margin-bottom: 8px; }
 
         .title {
             font-size: 22px;
@@ -45,11 +38,7 @@
             background-clip: text;
         }
 
-        .subtitle {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 30px;
-        }
+        .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 30px; }
 
         /* 连接状态 */
         .status-bar {
@@ -84,48 +73,30 @@
             color: #6ee7b7;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .disconnected .status-dot { background: #ef4444; }
         .connecting .status-dot { background: #fbbf24; animation: pulse 1.5s infinite; }
         .connected .status-dot { background: #34d399; }
 
         /* 音频可视化 */
         .visualizer-wrapper {
-            width: 200px;
-            height: 200px;
+            width: 200px; height: 200px;
             margin: 0 auto 24px;
             position: relative;
         }
 
-        canvas#visualizer {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-        }
+        canvas#visualizer { width: 200px; height: 200px; border-radius: 50%; }
 
         .visualizer-ring {
-            position: absolute;
-            inset: -4px;
+            position: absolute; inset: -4px;
             border-radius: 50%;
             border: 2px solid transparent;
             transition: border-color 0.3s;
         }
 
-        .connected .visualizer-ring {
-            border-color: rgba(52, 211, 153, 0.3);
-        }
-
+        .connected .visualizer-ring { border-color: rgba(52, 211, 153, 0.3); }
         .streaming .visualizer-ring {
             border-color: rgba(167, 139, 250, 0.5);
             animation: ring-pulse 2s infinite;
@@ -138,62 +109,32 @@
 
         /* 大按钮 */
         .btn-main {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            position: relative;
-            margin: 0 auto 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 140px; height: 140px;
+            border-radius: 50%; border: none; cursor: pointer;
+            position: relative; margin: 0 auto 24px;
+            display: flex; align-items: center; justify-content: center;
             font-size: 48px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             -webkit-tap-highlight-color: transparent;
         }
 
-        .btn-main.start {
-            background: linear-gradient(135deg, #34d399, #059669);
-        }
+        .btn-main.start { background: linear-gradient(135deg, #34d399, #059669); }
+        .btn-main.start:active { transform: scale(0.95); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
+        .btn-main.stop { background: linear-gradient(135deg, #f87171, #dc2626); }
+        .btn-main.stop:active { transform: scale(0.95); }
 
-        .btn-main.start:active {
-            transform: scale(0.95);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn-main.stop {
-            background: linear-gradient(135deg, #f87171, #dc2626);
-            animation: none;
-        }
-
-        .btn-main.stop:active {
-            transform: scale(0.95);
-        }
-
-        .btn-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #94a3b8;
-            margin-bottom: 24px;
-        }
+        .btn-label { font-size: 14px; font-weight: 600; color: #94a3b8; margin-bottom: 24px; }
 
         /* 音量指示 */
         .volume-bar {
-            width: 80%;
-            max-width: 300px;
-            height: 6px;
+            width: 80%; max-width: 300px; height: 6px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            margin: 0 auto 20px;
-            overflow: hidden;
+            border-radius: 3px; margin: 0 auto 20px; overflow: hidden;
         }
 
         .volume-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 3px;
+            height: 100%; width: 0%; border-radius: 3px;
             background: linear-gradient(90deg, #34d399, #a78bfa, #f87171);
             transition: width 0.05s linear;
         }
@@ -202,94 +143,47 @@
         .info-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
+            border-radius: 16px; padding: 16px; margin-bottom: 16px;
         }
 
         .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            font-size: 13px;
+            display: flex; justify-content: space-between;
+            align-items: center; padding: 6px 0; font-size: 13px;
         }
 
-        .info-row .label {
-            color: #64748b;
-        }
-
-        .info-row .value {
-            color: #e2e8f0;
-            font-weight: 500;
-            font-variant-numeric: tabular-nums;
-        }
+        .info-row .label { color: #64748b; }
+        .info-row .value { color: #e2e8f0; font-weight: 500; font-variant-numeric: tabular-nums; }
 
         /* 设置区域 */
-        .settings {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 16px;
-        }
+        .settings { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
 
         .settings select {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            color: #e2e8f0;
-            padding: 8px 12px;
-            font-size: 13px;
-            outline: none;
-            cursor: pointer;
+            border-radius: 10px; color: #e2e8f0;
+            padding: 8px 12px; font-size: 13px; outline: none; cursor: pointer;
         }
 
-        .settings select:focus {
-            border-color: rgba(167, 139, 250, 0.5);
-        }
+        .settings select:focus { border-color: rgba(167, 139, 250, 0.5); }
+        .settings select option { background: #1e1b4b; color: #e2e8f0; }
 
-        .settings select option {
-            background: #1e1b4b;
-            color: #e2e8f0;
-        }
+        .tips { font-size: 11px; color: #475569; line-height: 1.6; }
 
-        /* 使用说明 */
-        .tips {
-            font-size: 11px;
-            color: #475569;
-            line-height: 1.6;
-        }
-
-        /* Toast 通知 */
+        /* Toast */
         .toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
+            position: fixed; top: 20px; left: 50%;
             transform: translateX(-50%) translateY(-100px);
             background: rgba(30, 27, 75, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 10px 20px;
-            font-size: 13px;
-            color: #e2e8f0;
-            z-index: 1000;
+            border-radius: 12px; padding: 10px 20px;
+            font-size: 13px; color: #e2e8f0; z-index: 1000;
             transition: transform 0.3s ease;
             backdrop-filter: blur(10px);
         }
 
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.error {
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-        }
-
-        .toast.success {
-            border-color: rgba(52, 211, 153, 0.3);
-            color: #6ee7b7;
-        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.error { border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .toast.success { border-color: rgba(52, 211, 153, 0.3); color: #6ee7b7; }
     </style>
 </head>
 <body>
@@ -298,38 +192,27 @@
         <h1 class="title">手机音频传输</h1>
         <p class="subtitle">将手机音频实时传输到电脑播放</p>
 
-        <!-- 连接状态 -->
         <div id="statusBar" class="status-bar disconnected">
             <span class="status-dot"></span>
             <span id="statusText">未连接</span>
         </div>
 
-        <!-- 音频可视化 -->
         <div class="visualizer-wrapper" id="vizWrapper">
             <div class="visualizer-ring"></div>
             <canvas id="visualizer" width="400" height="400"></canvas>
         </div>
 
-        <!-- 开始/停止按钮 -->
-        <button id="mainBtn" class="btn-main start" onclick="toggleStream()">
-            🎤
-        </button>
+        <button id="mainBtn" class="btn-main start" onclick="toggleStream()">🎤</button>
         <p class="btn-label" id="btnLabel">点击开始传输</p>
 
-        <!-- 音量指示 -->
         <div class="volume-bar">
             <div class="volume-fill" id="volumeFill"></div>
         </div>
 
-        <!-- 信息卡片 -->
         <div class="info-card">
             <div class="info-row">
                 <span class="label">采样率</span>
                 <span class="value" id="sampleRateDisplay">44100 Hz</span>
-            </div>
-            <div class="info-row">
-                <span class="label">延迟</span>
-                <span class="value" id="latencyDisplay">-- ms</span>
             </div>
             <div class="info-row">
                 <span class="label">已传输</span>
@@ -341,21 +224,14 @@
             </div>
         </div>
 
-        <!-- 设置 -->
         <div class="settings">
             <select id="sampleRateSelect" onchange="updateSampleRate()">
                 <option value="44100">44100 Hz</option>
                 <option value="48000">48000 Hz</option>
                 <option value="16000">16000 Hz (低延迟)</option>
             </select>
-            <select id="bufferSizeSelect" onchange="updateBufferSize()">
-                <option value="4096">缓冲: 标准</option>
-                <option value="2048">缓冲: 低延迟</option>
-                <option value="8192">缓冲: 高稳定</option>
-            </select>
         </div>
 
-        <!-- 使用说明 -->
         <p class="tips">
             💡 确保手机和电脑在同一局域网下<br>
             📱 建议使用 Chrome / Edge 浏览器打开<br>
@@ -363,7 +239,6 @@
         </p>
     </div>
 
-    <!-- Toast -->
     <div id="toast" class="toast"></div>
 
     <script>
@@ -371,8 +246,9 @@
         let ws = null;
         let audioContext = null;
         let mediaStream = null;
-        let scriptProcessor = null;
+        let sourceNode = null;
         let analyser = null;
+        let workletNode = null;
         let isStreaming = false;
         let totalBytes = 0;
         let startTime = 0;
@@ -381,38 +257,79 @@
 
         let config = {
             sampleRate: 44100,
-            bufferSize: 4096,
+            bufferSize: 4096,  // 每次发送的采样帧数
         };
 
-        // ==================== 自动检测 WebSocket 地址 ====================
+        // ==================== AudioWorklet 代码（内联） ====================
+        const workletCode = `
+            // AudioWorklet：在独立线程中采集 PCM 数据，不阻塞主线程
+            class PCMProcessor extends AudioWorkletProcessor {
+                constructor() {
+                    super();
+                    this._bufferSize = 4096;
+                    this._buffer = new Float32Array(0);
+                    this.port.onmessage = (e) => {
+                        if (e.data.type === 'setBufferSize') {
+                            this._bufferSize = e.data.size;
+                        }
+                    };
+                }
+
+                process(inputs, outputs, parameters) {
+                    const input = inputs[0];
+                    if (!input || !input[0]) return true;
+
+                    const channelData = input[0];
+
+                    // 累积到缓冲区
+                    const newBuffer = new Float32Array(this._buffer.length + channelData.length);
+                    newBuffer.set(this._buffer);
+                    newBuffer.set(channelData, this._buffer.length);
+                    this._buffer = newBuffer;
+
+                    // 缓冲区满时发送
+                    while (this._buffer.length >= this._bufferSize) {
+                        const chunk = this._buffer.slice(0, this._bufferSize);
+                        this._buffer = this._buffer.slice(this._bufferSize);
+
+                        // Float32 → Int16 PCM
+                        const pcm16 = new Int16Array(chunk.length);
+                        for (let i = 0; i < chunk.length; i++) {
+                            const s = Math.max(-1, Math.min(1, chunk[i]));
+                            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                        }
+
+                        this.port.postMessage(pcm16.buffer, [pcm16.buffer]);
+                    }
+
+                    return true;
+                }
+            }
+            registerProcessor('pcm-processor', PCMProcessor);
+        `;
+
+        // ==================== WebSocket 地址 ====================
         function getWsUrl() {
             const loc = window.location;
             const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-            const hostname = loc.hostname;
-            // WSS 固定端口 8766
-            const wsPort = 8766;
-            return `${protocol}//${hostname}:${wsPort}`;
+            return `${protocol}//${loc.hostname}:8766`;
         }
 
-        // ==================== Toast 通知 ====================
+        // ==================== Toast ====================
         function showToast(msg, type = 'info') {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.className = 'toast ' + type + ' show';
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500);
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
-        // ==================== 更新连接状态 ====================
+        // ==================== 状态 ====================
         function setStatus(state, text) {
-            const bar = document.getElementById('statusBar');
-            const txt = document.getElementById('statusText');
-            bar.className = 'status-bar ' + state;
-            txt.textContent = text;
+            document.getElementById('statusBar').className = 'status-bar ' + state;
+            document.getElementById('statusText').textContent = text;
         }
 
-        // ==================== 连接 WebSocket ====================
+        // ==================== WebSocket ====================
         function connectWebSocket() {
             const url = getWsUrl();
             setStatus('connecting', '正在连接...');
@@ -430,7 +347,6 @@
             ws.onopen = () => {
                 setStatus('connected', '已连接');
                 showToast('已连接到电脑', 'success');
-                // 发送配置
                 ws.send(JSON.stringify({
                     type: 'config',
                     sampleRate: config.sampleRate,
@@ -440,14 +356,9 @@
 
             ws.onclose = () => {
                 setStatus('disconnected', '已断开');
-                if (isStreaming) {
-                    stopStreaming();
-                }
-                // 自动重连
+                if (isStreaming) stopStreaming();
                 setTimeout(() => {
-                    if (!ws || ws.readyState === WebSocket.CLOSED) {
-                        connectWebSocket();
-                    }
+                    if (!ws || ws.readyState === WebSocket.CLOSED) connectWebSocket();
                 }, 3000);
             };
 
@@ -457,7 +368,7 @@
             };
         }
 
-        // ==================== 开始音频传输 ====================
+        // ==================== 开始传输 ====================
         async function startStreaming() {
             if (!ws || ws.readyState !== WebSocket.OPEN) {
                 showToast('请先连接到电脑', 'error');
@@ -465,7 +376,7 @@
             }
 
             try {
-                // 请求麦克风权限
+                // 请求麦克风
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         sampleRate: { ideal: config.sampleRate },
@@ -480,42 +391,40 @@
                     sampleRate: config.sampleRate,
                 });
 
-                const source = audioContext.createMediaStreamSource(mediaStream);
+                sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-                // 分析器（用于可视化）
+                // 分析器（可视化用）
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
-                source.connect(analyser);
+                sourceNode.connect(analyser);
 
-                // ScriptProcessor 用于获取原始 PCM 数据
-                scriptProcessor = audioContext.createScriptProcessor(config.bufferSize, 1, 1);
-                source.connect(scriptProcessor);
-                scriptProcessor.connect(audioContext.destination);
+                // 注册 AudioWorklet
+                const blob = new Blob([workletCode], { type: 'application/javascript' });
+                const workletUrl = URL.createObjectURL(blob);
+                await audioContext.audioWorklet.addModule(workletUrl);
 
-                scriptProcessor.onaudioprocess = (e) => {
+                workletNode = new AudioWorkletNode(audioContext, 'pcm-processor');
+                workletNode.port.onmessage = (e) => {
                     if (!isStreaming || !ws || ws.readyState !== WebSocket.OPEN) return;
-
-                    const inputData = e.inputBuffer.getChannelData(0);
-
-                    // Float32 → Int16 PCM
-                    const pcm16 = new Int16Array(inputData.length);
-                    for (let i = 0; i < inputData.length; i++) {
-                        const s = Math.max(-1, Math.min(1, inputData[i]));
-                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                    }
-
-                    const buffer = pcm16.buffer;
-                    totalBytes += buffer.byteLength;
-
-                    ws.send(buffer);
+                    const data = e.data;
+                    totalBytes += data.byteLength;
+                    ws.send(data);
                 };
+
+                // 设置缓冲区大小
+                workletNode.port.postMessage({
+                    type: 'setBufferSize',
+                    size: config.bufferSize,
+                });
+
+                sourceNode.connect(workletNode);
+                // 注意：不连接到 destination，避免手机自己播放声音
 
                 isStreaming = true;
                 startTime = Date.now();
                 updateDuration();
                 startVisualization();
 
-                // 更新 UI
                 document.getElementById('mainBtn').className = 'btn-main stop';
                 document.getElementById('mainBtn').textContent = '⏹';
                 document.getElementById('btnLabel').textContent = '点击停止传输';
@@ -536,7 +445,7 @@
             }
         }
 
-        // ==================== 停止音频传输 ====================
+        // ==================== 停止传输 ====================
         function stopStreaming() {
             isStreaming = false;
 
@@ -544,32 +453,13 @@
                 ws.send(JSON.stringify({ type: 'stop' }));
             }
 
-            if (scriptProcessor) {
-                scriptProcessor.disconnect();
-                scriptProcessor = null;
-            }
+            if (workletNode) { workletNode.disconnect(); workletNode = null; }
+            if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
+            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+            if (audioContext) { audioContext.close(); audioContext = null; }
+            if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+            if (durationTimer) { clearInterval(durationTimer); durationTimer = null; }
 
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(t => t.stop());
-                mediaStream = null;
-            }
-
-            if (audioContext) {
-                audioContext.close();
-                audioContext = null;
-            }
-
-            if (animFrameId) {
-                cancelAnimationFrame(animFrameId);
-                animFrameId = null;
-            }
-
-            if (durationTimer) {
-                clearInterval(durationTimer);
-                durationTimer = null;
-            }
-
-            // 更新 UI
             document.getElementById('mainBtn').className = 'btn-main start';
             document.getElementById('mainBtn').textContent = '🎤';
             document.getElementById('btnLabel').textContent = '点击开始传输';
@@ -579,63 +469,47 @@
             showToast('已停止传输');
         }
 
-        // ==================== 切换传输状态 ====================
         function toggleStream() {
-            if (isStreaming) {
-                stopStreaming();
-            } else {
-                startStreaming();
-            }
+            if (isStreaming) stopStreaming();
+            else startStreaming();
         }
 
-        // ==================== 音频可视化 ====================
+        // ==================== 可视化 ====================
         function startVisualization() {
             const canvas = document.getElementById('visualizer');
             const ctx = canvas.getContext('2d');
-            const W = canvas.width;
-            const H = canvas.height;
-            const cx = W / 2;
-            const cy = H / 2;
+            const W = canvas.width, H = canvas.height;
+            const cx = W / 2, cy = H / 2;
 
             function draw() {
                 if (!isStreaming || !analyser) return;
-
                 animFrameId = requestAnimationFrame(draw);
 
                 const bufferLength = analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
                 analyser.getByteFrequencyData(dataArray);
 
-                // 计算平均音量
                 let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i];
-                }
+                for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
                 const avg = sum / bufferLength;
-                const volumePercent = Math.min(100, (avg / 128) * 100);
-                document.getElementById('volumeFill').style.width = volumePercent + '%';
+                document.getElementById('volumeFill').style.width = Math.min(100, (avg / 128) * 100) + '%';
 
-                // 清除画布
                 ctx.clearRect(0, 0, W, H);
 
-                // 绘制圆形频谱
                 const bars = 64;
                 const step = Math.floor(bufferLength / bars);
-                const baseRadius = 60;
-                const maxBarHeight = 80;
+                const baseRadius = 60, maxBarHeight = 80;
 
                 for (let i = 0; i < bars; i++) {
                     const val = dataArray[i * step] / 255;
                     const barHeight = val * maxBarHeight;
                     const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-
                     const x1 = cx + Math.cos(angle) * baseRadius;
                     const y1 = cy + Math.sin(angle) * baseRadius;
                     const x2 = cx + Math.cos(angle) * (baseRadius + barHeight);
                     const y2 = cy + Math.sin(angle) * (baseRadius + barHeight);
+                    const hue = (i / bars) * 120 + 160;
 
-                    // 渐变颜色
-                    const hue = (i / bars) * 120 + 160; // 紫色到绿色
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
@@ -645,7 +519,6 @@
                     ctx.stroke();
                 }
 
-                // 中心圆
                 const centerRadius = baseRadius - 10 + (avg / 255) * 8;
                 const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, centerRadius);
                 gradient.addColorStop(0, 'rgba(167, 139, 250, 0.3)');
@@ -655,18 +528,10 @@
                 ctx.fillStyle = gradient;
                 ctx.fill();
 
-                // 更新统计信息
-                updateStats();
+                document.getElementById('bytesDisplay').textContent = (totalBytes / 1024).toFixed(1) + ' KB';
             }
 
             draw();
-        }
-
-        // ==================== 更新统计信息 ====================
-        function updateStats() {
-            // 已传输字节数
-            const kb = (totalBytes / 1024).toFixed(1);
-            document.getElementById('bytesDisplay').textContent = kb + ' KB';
         }
 
         function updateDuration() {
@@ -679,7 +544,7 @@
             }, 1000);
         }
 
-        // ==================== 设置更新 ====================
+        // ==================== 设置 ====================
         function updateSampleRate() {
             config.sampleRate = parseInt(document.getElementById('sampleRateSelect').value);
             document.getElementById('sampleRateDisplay').textContent = config.sampleRate + ' Hz';
@@ -692,29 +557,12 @@
             }
         }
 
-        function updateBufferSize() {
-            config.bufferSize = parseInt(document.getElementById('bufferSizeSelect').value);
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'config',
-                    sampleRate: config.sampleRate,
-                    bufferSize: config.bufferSize,
-                }));
-            }
-        }
-
         // ==================== 初始化 ====================
         window.addEventListener('load', () => {
             connectWebSocket();
-
-            // 绘制静态可视化背景
             const canvas = document.getElementById('visualizer');
             const ctx = canvas.getContext('2d');
-            const W = canvas.width;
-            const H = canvas.height;
-            const cx = W / 2;
-            const cy = H / 2;
-
+            const cx = 200, cy = 200;
             const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
             gradient.addColorStop(0, 'rgba(167, 139, 250, 0.15)');
             gradient.addColorStop(1, 'rgba(167, 139, 250, 0.02)');
@@ -724,7 +572,6 @@
             ctx.fill();
         });
 
-        // 页面关闭时清理
         window.addEventListener('beforeunload', () => {
             if (isStreaming) stopStreaming();
             if (ws) ws.close();
