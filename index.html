@@ -6,184 +6,66 @@
     <title>🎵 手机音频传输</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            min-height: 100vh; color: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-
-        .container {
-            width: 100%;
-            max-width: 420px;
-            padding: 20px;
-            text-align: center;
-        }
-
+        .container { width: 100%; max-width: 420px; padding: 20px; text-align: center; }
         .logo { font-size: 48px; margin-bottom: 8px; }
-
         .title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 4px;
+            font-size: 22px; font-weight: 700; margin-bottom: 4px;
             background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
         .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 30px; }
-
-        /* 连接状态 */
         .status-bar {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 50px;
-            margin-bottom: 24px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 20px; border-radius: 50px; margin-bottom: 24px;
+            font-size: 14px; font-weight: 500; transition: all 0.3s ease;
         }
-
-        .status-bar.disconnected {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-        }
-
-        .status-bar.connecting {
-            background: rgba(251, 191, 36, 0.15);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-            color: #fde68a;
-            animation: pulse 1.5s infinite;
-        }
-
-        .status-bar.connected {
-            background: rgba(52, 211, 153, 0.15);
-            border: 1px solid rgba(52, 211, 153, 0.3);
-            color: #6ee7b7;
-        }
-
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-
+        .status-bar.disconnected { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+        .status-bar.connecting { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fde68a; animation: pulse 1.5s infinite; }
+        .status-bar.connected { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .disconnected .status-dot { background: #ef4444; }
         .connecting .status-dot { background: #fbbf24; animation: pulse 1.5s infinite; }
         .connected .status-dot { background: #34d399; }
-
-        /* 音频可视化 */
-        .visualizer-wrapper {
-            width: 200px; height: 200px;
-            margin: 0 auto 24px;
-            position: relative;
-        }
-
+        .visualizer-wrapper { width: 200px; height: 200px; margin: 0 auto 24px; position: relative; }
         canvas#visualizer { width: 200px; height: 200px; border-radius: 50%; }
-
-        .visualizer-ring {
-            position: absolute; inset: -4px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            transition: border-color 0.3s;
-        }
-
-        .connected .visualizer-ring { border-color: rgba(52, 211, 153, 0.3); }
-        .streaming .visualizer-ring {
-            border-color: rgba(167, 139, 250, 0.5);
-            animation: ring-pulse 2s infinite;
-        }
-
-        @keyframes ring-pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.7; }
-        }
-
-        /* 大按钮 */
+        .visualizer-ring { position: absolute; inset: -4px; border-radius: 50%; border: 2px solid transparent; transition: border-color 0.3s; }
+        .connected .visualizer-ring { border-color: rgba(52,211,153,0.3); }
+        .streaming .visualizer-ring { border-color: rgba(167,139,250,0.5); animation: ring-pulse 2s infinite; }
+        @keyframes ring-pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.05);opacity:0.7} }
         .btn-main {
-            width: 140px; height: 140px;
-            border-radius: 50%; border: none; cursor: pointer;
-            position: relative; margin: 0 auto 24px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 48px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 140px; height: 140px; border-radius: 50%; border: none; cursor: pointer;
+            margin: 0 auto 24px; display: flex; align-items: center; justify-content: center;
+            font-size: 48px; transition: all 0.3s; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             -webkit-tap-highlight-color: transparent;
         }
-
         .btn-main.start { background: linear-gradient(135deg, #34d399, #059669); }
-        .btn-main.start:active { transform: scale(0.95); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
+        .btn-main.start:active { transform: scale(0.95); }
         .btn-main.stop { background: linear-gradient(135deg, #f87171, #dc2626); }
         .btn-main.stop:active { transform: scale(0.95); }
-
         .btn-label { font-size: 14px; font-weight: 600; color: #94a3b8; margin-bottom: 24px; }
-
-        /* 音量指示 */
-        .volume-bar {
-            width: 80%; max-width: 300px; height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px; margin: 0 auto 20px; overflow: hidden;
-        }
-
-        .volume-fill {
-            height: 100%; width: 0%; border-radius: 3px;
-            background: linear-gradient(90deg, #34d399, #a78bfa, #f87171);
-            transition: width 0.05s linear;
-        }
-
-        /* 信息卡片 */
-        .info-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px; padding: 16px; margin-bottom: 16px;
-        }
-
-        .info-row {
-            display: flex; justify-content: space-between;
-            align-items: center; padding: 6px 0; font-size: 13px;
-        }
-
+        .volume-bar { width: 80%; max-width: 300px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 0 auto 20px; overflow: hidden; }
+        .volume-fill { height: 100%; width: 0%; border-radius: 3px; background: linear-gradient(90deg, #34d399, #a78bfa, #f87171); transition: width 0.05s linear; }
+        .info-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
         .info-row .label { color: #64748b; }
         .info-row .value { color: #e2e8f0; font-weight: 500; font-variant-numeric: tabular-nums; }
-
-        /* 设置区域 */
-        .settings { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
-
-        .settings select {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px; color: #e2e8f0;
-            padding: 8px 12px; font-size: 13px; outline: none; cursor: pointer;
-        }
-
-        .settings select:focus { border-color: rgba(167, 139, 250, 0.5); }
-        .settings select option { background: #1e1b4b; color: #e2e8f0; }
-
         .tips { font-size: 11px; color: #475569; line-height: 1.6; }
-
-        /* Toast */
         .toast {
-            position: fixed; top: 20px; left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: rgba(30, 27, 75, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px; padding: 10px 20px;
-            font-size: 13px; color: #e2e8f0; z-index: 1000;
-            transition: transform 0.3s ease;
-            backdrop-filter: blur(10px);
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: rgba(30,27,75,0.95); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 10px 20px; font-size: 13px; color: #e2e8f0;
+            z-index: 1000; transition: transform 0.3s ease; backdrop-filter: blur(10px);
         }
-
         .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast.error { border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
-        .toast.success { border-color: rgba(52, 211, 153, 0.3); color: #6ee7b7; }
+        .toast.error { border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+        .toast.success { border-color: rgba(52,211,153,0.3); color: #6ee7b7; }
     </style>
 </head>
 <body>
@@ -224,14 +106,6 @@
             </div>
         </div>
 
-        <div class="settings">
-            <select id="sampleRateSelect" onchange="updateSampleRate()">
-                <option value="44100">44100 Hz</option>
-                <option value="48000">48000 Hz</option>
-                <option value="16000">16000 Hz (低延迟)</option>
-            </select>
-        </div>
-
         <p class="tips">
             💡 确保手机和电脑在同一局域网下<br>
             📱 建议使用 Chrome / Edge 浏览器打开<br>
@@ -248,123 +122,60 @@
         let mediaStream = null;
         let sourceNode = null;
         let analyser = null;
-        let workletNode = null;
+        let scriptNode = null;
         let isStreaming = false;
         let totalBytes = 0;
         let startTime = 0;
         let durationTimer = null;
         let animFrameId = null;
 
-        let config = {
-            sampleRate: 44100,
-            bufferSize: 4096,  // 每次发送的采样帧数
-        };
+        // ==================== 配置 ====================
+        // bufferSize 越大，每次发送的数据越多，网络开销越小，但延迟略增
+        // 4096 = 约 93ms 一包，是流畅和延迟的平衡点
+        const BUFFER_SIZE = 4096;
 
-        // ==================== AudioWorklet 代码（内联） ====================
-        const workletCode = `
-            // AudioWorklet：在独立线程中采集 PCM 数据，不阻塞主线程
-            class PCMProcessor extends AudioWorkletProcessor {
-                constructor() {
-                    super();
-                    this._bufferSize = 4096;
-                    this._buffer = new Float32Array(0);
-                    this.port.onmessage = (e) => {
-                        if (e.data.type === 'setBufferSize') {
-                            this._bufferSize = e.data.size;
-                        }
-                    };
-                }
-
-                process(inputs, outputs, parameters) {
-                    const input = inputs[0];
-                    if (!input || !input[0]) return true;
-
-                    const channelData = input[0];
-
-                    // 累积到缓冲区
-                    const newBuffer = new Float32Array(this._buffer.length + channelData.length);
-                    newBuffer.set(this._buffer);
-                    newBuffer.set(channelData, this._buffer.length);
-                    this._buffer = newBuffer;
-
-                    // 缓冲区满时发送
-                    while (this._buffer.length >= this._bufferSize) {
-                        const chunk = this._buffer.slice(0, this._bufferSize);
-                        this._buffer = this._buffer.slice(this._bufferSize);
-
-                        // Float32 → Int16 PCM
-                        const pcm16 = new Int16Array(chunk.length);
-                        for (let i = 0; i < chunk.length; i++) {
-                            const s = Math.max(-1, Math.min(1, chunk[i]));
-                            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-                        }
-
-                        this.port.postMessage(pcm16.buffer, [pcm16.buffer]);
-                    }
-
-                    return true;
-                }
-            }
-            registerProcessor('pcm-processor', PCMProcessor);
-        `;
-
-        // ==================== WebSocket 地址 ====================
+        // ==================== WebSocket ====================
         function getWsUrl() {
             const loc = window.location;
             const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-            return `${protocol}//${loc.hostname}:8766`;
+            return protocol + '//' + loc.hostname + ':8766';
         }
 
-        // ==================== Toast ====================
-        function showToast(msg, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.className = 'toast ' + type + ' show';
-            setTimeout(() => toast.classList.remove('show'), 2500);
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (type || '') + ' show';
+            setTimeout(function() { t.classList.remove('show'); }, 2500);
         }
 
-        // ==================== 状态 ====================
         function setStatus(state, text) {
             document.getElementById('statusBar').className = 'status-bar ' + state;
             document.getElementById('statusText').textContent = text;
         }
 
-        // ==================== WebSocket ====================
         function connectWebSocket() {
-            const url = getWsUrl();
             setStatus('connecting', '正在连接...');
-
-            try {
-                ws = new WebSocket(url);
-            } catch (e) {
-                setStatus('disconnected', '连接失败');
-                showToast('无法创建 WebSocket 连接', 'error');
-                return;
-            }
+            try { ws = new WebSocket(getWsUrl()); }
+            catch (e) { setStatus('disconnected', '连接失败'); return; }
 
             ws.binaryType = 'arraybuffer';
 
-            ws.onopen = () => {
+            ws.onopen = function() {
                 setStatus('connected', '已连接');
                 showToast('已连接到电脑', 'success');
-                ws.send(JSON.stringify({
-                    type: 'config',
-                    sampleRate: config.sampleRate,
-                    bufferSize: config.bufferSize,
-                }));
             };
 
-            ws.onclose = () => {
+            ws.onclose = function() {
                 setStatus('disconnected', '已断开');
                 if (isStreaming) stopStreaming();
-                setTimeout(() => {
+                setTimeout(function() {
                     if (!ws || ws.readyState === WebSocket.CLOSED) connectWebSocket();
                 }, 3000);
             };
 
-            ws.onerror = () => {
+            ws.onerror = function() {
                 setStatus('disconnected', '连接错误');
-                showToast('连接出错，请检查服务端是否运行', 'error');
+                showToast('连接出错', 'error');
             };
         }
 
@@ -376,10 +187,9 @@
             }
 
             try {
-                // 请求麦克风
+                // 请求麦克风（关闭所有音频处理，获取最原始的声音）
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: {
-                        sampleRate: { ideal: config.sampleRate },
                         channelCount: 1,
                         echoCancellation: false,
                         noiseSuppression: false,
@@ -387,38 +197,39 @@
                     }
                 });
 
-                audioContext = new (window.AudioContext || window.webkitAudioContext)({
-                    sampleRate: config.sampleRate,
-                });
-
+                // 使用设备原生采样率，避免重采样导致卡顿
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 sourceNode = audioContext.createMediaStreamSource(mediaStream);
 
-                // 分析器（可视化用）
+                // 可视化分析器
                 analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
                 sourceNode.connect(analyser);
 
-                // 注册 AudioWorklet
-                const blob = new Blob([workletCode], { type: 'application/javascript' });
-                const workletUrl = URL.createObjectURL(blob);
-                await audioContext.audioWorklet.addModule(workletUrl);
+                // ScriptProcessor：兼容性最好，Android Chrome 完美支持
+                // bufferSize=4096 约等于 93ms@44100Hz，平衡流畅度和延迟
+                scriptNode = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+                sourceNode.connect(scriptNode);
+                // 关键：不连接 destination，避免手机自己播放产生回声
 
-                workletNode = new AudioWorkletNode(audioContext, 'pcm-processor');
-                workletNode.port.onmessage = (e) => {
+                scriptNode.onaudioprocess = function(e) {
                     if (!isStreaming || !ws || ws.readyState !== WebSocket.OPEN) return;
-                    const data = e.data;
-                    totalBytes += data.byteLength;
-                    ws.send(data);
+
+                    var inputData = e.inputBuffer.getChannelData(0);
+                    var len = inputData.length;
+
+                    // Float32 → Int16 PCM（手动转换，避免 TypedArray 开销）
+                    var pcm16 = new Int16Array(len);
+                    for (var i = 0; i < len; i++) {
+                        var s = inputData[i];
+                        if (s > 1) s = 1;
+                        else if (s < -1) s = -1;
+                        pcm16[i] = s < 0 ? (s * 32768) | 0 : (s * 32767) | 0;
+                    }
+
+                    ws.send(pcm16.buffer);
+                    totalBytes += len * 2;
                 };
-
-                // 设置缓冲区大小
-                workletNode.port.postMessage({
-                    type: 'setBufferSize',
-                    size: config.bufferSize,
-                });
-
-                sourceNode.connect(workletNode);
-                // 注意：不连接到 destination，避免手机自己播放声音
 
                 isStreaming = true;
                 startTime = Date.now();
@@ -436,9 +247,9 @@
             } catch (err) {
                 console.error('麦克风访问失败:', err);
                 if (err.name === 'NotAllowedError') {
-                    showToast('请允许麦克风访问权限', 'error');
+                    showToast('请允许麦克风权限', 'error');
                 } else if (err.name === 'NotFoundError') {
-                    showToast('未检测到麦克风设备', 'error');
+                    showToast('未检测到麦克风', 'error');
                 } else {
                     showToast('启动失败: ' + err.message, 'error');
                 }
@@ -453,9 +264,9 @@
                 ws.send(JSON.stringify({ type: 'stop' }));
             }
 
-            if (workletNode) { workletNode.disconnect(); workletNode = null; }
+            if (scriptNode) { scriptNode.disconnect(); scriptNode = null; }
             if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
-            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+            if (mediaStream) { mediaStream.getTracks().forEach(function(t) { t.stop(); }); mediaStream = null; }
             if (audioContext) { audioContext.close(); audioContext = null; }
             if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
             if (durationTimer) { clearInterval(durationTimer); durationTimer = null; }
@@ -476,103 +287,86 @@
 
         // ==================== 可视化 ====================
         function startVisualization() {
-            const canvas = document.getElementById('visualizer');
-            const ctx = canvas.getContext('2d');
-            const W = canvas.width, H = canvas.height;
-            const cx = W / 2, cy = H / 2;
+            var canvas = document.getElementById('visualizer');
+            var ctx = canvas.getContext('2d');
+            var W = canvas.width, H = canvas.height;
+            var cx = W / 2, cy = H / 2;
 
             function draw() {
                 if (!isStreaming || !analyser) return;
                 animFrameId = requestAnimationFrame(draw);
 
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-                analyser.getByteFrequencyData(dataArray);
+                var bufLen = analyser.frequencyBinCount;
+                var data = new Uint8Array(bufLen);
+                analyser.getByteFrequencyData(data);
 
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
-                const avg = sum / bufferLength;
+                var sum = 0;
+                for (var i = 0; i < bufLen; i++) sum += data[i];
+                var avg = sum / bufLen;
                 document.getElementById('volumeFill').style.width = Math.min(100, (avg / 128) * 100) + '%';
 
                 ctx.clearRect(0, 0, W, H);
 
-                const bars = 64;
-                const step = Math.floor(bufferLength / bars);
-                const baseRadius = 60, maxBarHeight = 80;
+                var bars = 64, step = Math.floor(bufLen / bars);
+                var baseR = 60, maxH = 80;
 
-                for (let i = 0; i < bars; i++) {
-                    const val = dataArray[i * step] / 255;
-                    const barHeight = val * maxBarHeight;
-                    const angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
-                    const x1 = cx + Math.cos(angle) * baseRadius;
-                    const y1 = cy + Math.sin(angle) * baseRadius;
-                    const x2 = cx + Math.cos(angle) * (baseRadius + barHeight);
-                    const y2 = cy + Math.sin(angle) * (baseRadius + barHeight);
-                    const hue = (i / bars) * 120 + 160;
-
+                for (var i = 0; i < bars; i++) {
+                    var val = data[i * step] / 255;
+                    var h = val * maxH;
+                    var angle = (i / bars) * Math.PI * 2 - Math.PI / 2;
+                    var x1 = cx + Math.cos(angle) * baseR;
+                    var y1 = cy + Math.sin(angle) * baseR;
+                    var x2 = cx + Math.cos(angle) * (baseR + h);
+                    var y2 = cy + Math.sin(angle) * (baseR + h);
+                    var hue = (i / bars) * 120 + 160;
                     ctx.beginPath();
                     ctx.moveTo(x1, y1);
                     ctx.lineTo(x2, y2);
-                    ctx.strokeStyle = `hsla(${hue}, 80%, 65%, ${0.4 + val * 0.6})`;
+                    ctx.strokeStyle = 'hsla(' + hue + ',80%,65%,' + (0.4 + val * 0.6) + ')';
                     ctx.lineWidth = 3;
                     ctx.lineCap = 'round';
                     ctx.stroke();
                 }
 
-                const centerRadius = baseRadius - 10 + (avg / 255) * 8;
-                const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, centerRadius);
-                gradient.addColorStop(0, 'rgba(167, 139, 250, 0.3)');
-                gradient.addColorStop(1, 'rgba(167, 139, 250, 0.05)');
+                var cr = baseR - 10 + (avg / 255) * 8;
+                var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+                grad.addColorStop(0, 'rgba(167,139,250,0.3)');
+                grad.addColorStop(1, 'rgba(167,139,250,0.05)');
                 ctx.beginPath();
-                ctx.arc(cx, cy, centerRadius, 0, Math.PI * 2);
-                ctx.fillStyle = gradient;
+                ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
                 ctx.fill();
 
                 document.getElementById('bytesDisplay').textContent = (totalBytes / 1024).toFixed(1) + ' KB';
             }
-
             draw();
         }
 
         function updateDuration() {
-            durationTimer = setInterval(() => {
+            durationTimer = setInterval(function() {
                 if (!isStreaming) return;
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-                const s = String(elapsed % 60).padStart(2, '0');
-                document.getElementById('durationDisplay').textContent = `${m}:${s}`;
+                var elapsed = Math.floor((Date.now() - startTime) / 1000);
+                var m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                var s = String(elapsed % 60).padStart(2, '0');
+                document.getElementById('durationDisplay').textContent = m + ':' + s;
             }, 1000);
         }
 
-        // ==================== 设置 ====================
-        function updateSampleRate() {
-            config.sampleRate = parseInt(document.getElementById('sampleRateSelect').value);
-            document.getElementById('sampleRateDisplay').textContent = config.sampleRate + ' Hz';
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: 'config',
-                    sampleRate: config.sampleRate,
-                    bufferSize: config.bufferSize,
-                }));
-            }
-        }
-
         // ==================== 初始化 ====================
-        window.addEventListener('load', () => {
+        window.addEventListener('load', function() {
             connectWebSocket();
-            const canvas = document.getElementById('visualizer');
-            const ctx = canvas.getContext('2d');
-            const cx = 200, cy = 200;
-            const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
-            gradient.addColorStop(0, 'rgba(167, 139, 250, 0.15)');
-            gradient.addColorStop(1, 'rgba(167, 139, 250, 0.02)');
+            var canvas = document.getElementById('visualizer');
+            var ctx = canvas.getContext('2d');
+            var grad = ctx.createRadialGradient(200, 200, 0, 200, 200, 60);
+            grad.addColorStop(0, 'rgba(167,139,250,0.15)');
+            grad.addColorStop(1, 'rgba(167,139,250,0.02)');
             ctx.beginPath();
-            ctx.arc(cx, cy, 60, 0, Math.PI * 2);
-            ctx.fillStyle = gradient;
+            ctx.arc(200, 200, 60, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
             ctx.fill();
         });
 
-        window.addEventListener('beforeunload', () => {
+        window.addEventListener('beforeunload', function() {
             if (isStreaming) stopStreaming();
             if (ws) ws.close();
         });
