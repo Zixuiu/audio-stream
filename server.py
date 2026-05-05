@@ -1,30 +1,36 @@
 """
-手机音频 → 电脑播放 服务端
+手机音频 → 电脑播放 服务端（HTTPS + WSS）
 用法: python server.py
-然后在手机浏览器中打开 http://<电脑IP>:8765
+然后在手机浏览器中打开 https://<电脑IP>:8765
+首次访问时浏览器会提示证书不安全，点击「高级」→「继续访问」即可
 """
 
 import asyncio
 import json
+import os
 import socket
-import struct
-import sys
+import ssl
 import threading
-import time
 import webbrowser
 from pathlib import Path
 
-import numpy as np
 import pyaudio
 import websockets
 
 # ==================== 配置 ====================
-HOST = "0.0.0.0"          # 监听所有网卡，手机可通过局域网访问
-PORT = 8765               # 服务端口
+HOST = "0.0.0.0"          # 监听所有网卡
+PORT = 8765               # HTTPS 端口
+WS_PORT = 8766            # WSS 端口
 SAMPLE_RATE = 44100       # 采样率
 CHANNELS = 1              # 单声道
 FRAMES_PER_BUFFER = 4096  # 每次播放的帧数
 FORMAT = pyaudio.paInt16  # 16位 PCM
+
+# ==================== SSL 证书路径 ====================
+BASE_DIR = Path(__file__).parent
+CERT_FILE = BASE_DIR / "cert.pem"
+KEY_FILE = BASE_DIR / "key.pem"
+
 
 # ==================== 音频播放器 ====================
 class AudioPlayer:
@@ -52,7 +58,6 @@ class AudioPlayer:
             try:
                 self.stream.write(audio_data)
             except Exception:
-                # 流出错时重新打开
                 try:
                     self.stream.stop_stream()
                     self.stream.close()
@@ -75,7 +80,6 @@ class AudioPlayer:
 
 # ==================== 获取本机局域网 IP ====================
 def get_local_ip() -> str:
-    """获取本机局域网 IP 地址"""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -84,6 +88,14 @@ def get_local_ip() -> str:
         return ip
     except Exception:
         return "127.0.0.1"
+
+
+# ==================== 创建 SSL 上下文 ====================
+def create_ssl_context():
+    """创建 SSL 上下文（自签名证书）"""
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(str(CERT_FILE), str(KEY_FILE))
+    return ctx
 
 
 # ==================== WebSocket 处理 ====================
@@ -95,14 +107,11 @@ async def handle_client(websocket, player: AudioPlayer):
     try:
         async for message in websocket:
             if isinstance(message, bytes):
-                # 二进制数据 = PCM 音频
                 player.play(message)
             elif isinstance(message, str):
-                # JSON 文本消息 = 控制命令
                 try:
                     data = json.loads(message)
                     cmd = data.get("type", "")
-
                     if cmd == "config":
                         print(f"[*] 客户端音频配置: {data}")
                     elif cmd == "start":
@@ -117,19 +126,18 @@ async def handle_client(websocket, player: AudioPlayer):
         print(f"[!] 客户端错误 ({client_addr}): {e}")
 
 
-# ==================== HTTP 服务（提供网页） ====================
-async def http_handler(reader, writer):
-    """简单的 HTTP 服务器，返回 index.html"""
+# ==================== HTTPS 服务（提供网页） ====================
+async def https_handler(reader, writer):
+    """简单的 HTTPS 服务器，返回 index.html"""
     try:
         request_line = (await reader.readline()).decode("utf-8", errors="ignore")
         if "GET" in request_line:
-            # 读取剩余请求头
             while True:
                 line = await reader.readline()
                 if line in (b"\r\n", b"\n", b""):
                     break
 
-            html_path = Path(__file__).parent / "index.html"
+            html_path = BASE_DIR / "index.html"
             if html_path.exists():
                 content = html_path.read_bytes()
             else:
@@ -139,9 +147,10 @@ async def http_handler(reader, writer):
                 b"HTTP/1.1 200 OK\r\n"
                 b"Content-Type: text/html; charset=utf-8\r\n"
                 b"Connection: close\r\n"
-                f"Content-Length: {len(content)}\r\n"
-                b"\r\n"
-            ) + content
+                + f"Content-Length: {len(content)}\r\n".encode()
+                + b"\r\n"
+                + content
+            )
             writer.write(response)
             await writer.drain()
     except Exception:
@@ -155,35 +164,41 @@ async def http_handler(reader, writer):
 async def main():
     local_ip = get_local_ip()
     player = AudioPlayer()
+    ssl_ctx = create_ssl_context()
 
     print("=" * 55)
-    print("  🎵 手机音频 → 电脑播放 服务端")
+    print("  🎵 手机音频 → 电脑播放 服务端 (HTTPS)")
     print("=" * 55)
     print(f"  本机 IP:   {local_ip}")
-    print(f"  监听端口:  {PORT}")
+    print(f"  HTTPS 端口: {PORT}")
+    print(f"  WSS 端口:   {WS_PORT}")
     print(f"  采样率:    {SAMPLE_RATE} Hz")
     print("=" * 55)
-    print(f"\n  📱 手机浏览器打开: http://{local_ip}:{PORT}")
-    print(f"  💻 电脑浏览器打开: http://localhost:{PORT}")
-    print(f"\n  按 Ctrl+C 停止服务\n")
+    print(f"\n  📱 手机浏览器打开: https://{local_ip}:{PORT}")
+    print(f"  💻 电脑浏览器打开: https://localhost:{PORT}")
+    print(f"\n  ⚠️  首次访问会提示证书不安全，点击「高级」→「继续访问」")
+    print(f"  按 Ctrl+C 停止服务\n")
 
-    # 启动 HTTP 服务器（提供网页）
-    http_server = await asyncio.start_server(http_handler, HOST, PORT)
+    # 启动 HTTPS 服务器（提供网页）
+    https_server = await asyncio.start_server(
+        https_handler, HOST, PORT, ssl=ssl_ctx
+    )
 
-    # 启动 WebSocket 服务器（音频传输）
-    ws_server = await websockets.serve(
+    # 启动 WSS 服务器（音频传输）
+    wss_server = await websockets.serve(
         lambda ws: handle_client(ws, player),
         HOST,
-        PORT + 1,  # WebSocket 用 PORT+1
+        WS_PORT,
+        ssl=ssl_ctx,
     )
 
     # 自动打开浏览器
-    webbrowser.open(f"http://localhost:{PORT}")
+    webbrowser.open(f"https://localhost:{PORT}")
 
     try:
         await asyncio.gather(
-            http_server.serve_forever(),
-            ws_server.serve_forever(),
+            https_server.serve_forever(),
+            wss_server.serve_forever(),
         )
     except asyncio.CancelledError:
         pass
