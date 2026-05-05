@@ -217,16 +217,22 @@ async def https_handler(reader, writer):
                 b"HTTP/1.1 200 OK\r\n"
                 b"Content-Type: text/html; charset=utf-8\r\n"
                 b"Connection: close\r\n"
+                b"Cache-Control: no-cache\r\n"
                 + f"Content-Length: {len(content)}\r\n".encode()
                 + b"\r\n" + content
             )
             writer.write(response)
             await writer.drain()
-    except Exception:
+    except (ConnectionResetError, BrokenPipeError, asyncio.IncompleteReadError):
         pass
+    except Exception as e:
+        print(f"[!] HTTPS handler error: {e}")
     finally:
-        writer.close()
-        await writer.wait_closed()
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
 
 
 # ==================== 主函数 ====================
